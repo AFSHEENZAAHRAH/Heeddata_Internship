@@ -1,0 +1,55 @@
+import fitz  
+from transformers import BertTokenizer, BertModel
+import torch  # torch--handling tensor operations
+from transformers import AutoTokenizer, AutoModel, pipeline
+import torch
+
+PDF_PATH = r'c:\Users\afshe\Downloads\Get_Started_With_Smallpdf.pdf'
+OUTPUT_TXT = "textFile.txt"
+
+def extract_text_from_pdf(PDF_PATH):
+    text = ""  # an empty string to store the text
+    document = fitz.open(PDF_PATH)
+    for page_num in range(len(document)):
+        page = document.load_page(page_num)
+        text += page.get_text()
+    return text
+
+def get_embeddings(text):
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    model = BertModel.from_pretrained('bert-base-uncased')
+
+    inputs = tokenizer(text, return_tensors='pt', truncation=True, padding=True, max_length=512)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    embeddings = outputs.last_hidden_state.mean(dim=1) 
+    return embeddings
+
+if __name__ == "__main__":
+    text = extract_text_from_pdf(PDF_PATH)
+    
+    with open(OUTPUT_TXT, 'w', encoding='utf-8') as txt_file:
+        txt_file.write(text)
+    
+    print("PDF converted to text file.")
+    
+    embeddings = get_embeddings(text)
+    print("embeddings:", embeddings)
+
+model_name = "bert-base-uncased"  
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModel.from_pretrained(model_name)   
+
+qa_pipeline = pipeline("question-answering", model="distilbert-base-uncased-distilled-squad")
+
+input_file = (text)
+inputs = tokenizer(input_file, return_tensors="pt")
+with torch.no_grad():
+    outputs = model(**inputs)
+    embeddings = outputs.last_hidden_state
+    embeddings_np = embeddings.numpy()
+
+context = input_file
+question = "can digital documents be uploaded with new SmallPDF?"
+result = qa_pipeline(question=question, context=context)
+print("Answer:",result['answer'])

@@ -1,0 +1,33 @@
+from pymongo import MongoClient
+from urllib.parse import quote_plus
+import json
+
+FILE_PATH = r'C:\Users\afshe\OneDrive - Kumaraguru College of Technology\Desktop\API\output.json'
+
+name = 'afsheenzaahrah25' 
+pass_word = '9io1i0I1SlZvIZwZ'
+username = quote_plus(name)
+password = quote_plus(pass_word)
+cluster = 'cluster0.jwxhgrj.mongodb.net'
+database_name = 'demo_database'
+
+MONGO_URL = f'mongodb+srv://{username}:{password}@{cluster}/{database_name}?retryWrites=true'
+
+try:
+    mongo_client = MongoClient(MONGO_URL)
+    db = mongo_client[database_name]
+    collection_name = "demo_data"
+    collection = db[collection_name]
+
+    with open(FILE_PATH) as f:
+        json_file = json.load(f)
+
+    if isinstance(json_file, list):
+        collection.insert_many(json_file)
+    else:
+        collection.insert_one(json_file)
+
+    print(f'Data inserted into database: {database_name}, collection: {collection_name}')
+
+except Exception as e:
+    print(f'Error inserting data: {str(e)}')

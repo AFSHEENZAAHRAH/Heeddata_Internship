@@ -1,0 +1,30 @@
+from transformers import AutoTokenizer, AutoModel, pipeline
+import torch
+
+
+model_name = "bert-base-uncased"  
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModel.from_pretrained(model_name)
+
+
+qa_pipeline = pipeline("question-answering", model="distilbert-base-uncased-distilled-squad")
+
+
+input_text = "AFSHEEN IS FROM TAMIL NADU."
+inputs = tokenizer(input_text, return_tensors="pt")
+
+
+with torch.no_grad():
+    outputs = model(**inputs)
+    embeddings = outputs.last_hidden_state
+    embeddings_np = embeddings.numpy()
+
+print(f"Embeddings shape: {embeddings.shape}")
+
+
+context = input_text
+question = "WHERE IS AFSHEEN FROM?"
+result = qa_pipeline(question=question, context=context)
+
+print("Answer:", result['answer'])
+
